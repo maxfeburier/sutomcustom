@@ -1,0 +1,138 @@
+.sutom-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2vw;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 85%;
+    margin: 0 auto;
+}
+
+h1{
+    font-size: 3rem;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.white-text{
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.title {
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.grid {
+    width: 100%;
+    background-color: cadetblue;
+    display: grid;
+    gap: 1vh;
+    margin-bottom: 1vh;
+    padding: 2vh;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    justify-content: center;
+}
+
+.cell {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0.25vh solid #d3d6da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4vh;
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: white;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+}
+
+.cell.correct {
+    background-color: #6aaa64;
+    color: white;
+    border-color: #6aaa64;
+    animation: flip 0.6s ease-in-out;
+}
+
+.cell.present {
+    background-color: #c9b458;
+    color: white;
+    border-color: #c9b458;
+    animation: flip 0.6s ease-in-out;
+}
+
+.cell.absent {
+    background-color: #787c7e;
+    color: white;
+    border-color: #787c7e;
+    animation: flip 0.6s ease-in-out;
+}
+
+.row {
+    display: flex;
+    gap: 1.5vw;
+    margin-bottom: 10px;
+}
+
+.keyboard {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.key {
+    padding: 10px;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    background-color: #d3d6da;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.key:hover {
+    background-color: #a8a9ab;
+}
+
+.key.wide {
+    grid-column: span 2;
+}
+
+.MuiSelect-root, .day-word-input{
+    background-color: white;
+}
+
+.day-word-input{
+    margin-bottom: 1rem!important;
+}
+
+.change-word-button{
+    margin-right: 1rem!important;
+}
+
+.submit-button{
+    margin-left: 1rem!important;
+}
+
+.buttons-group{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    gap: 1rem;
+}
+
+.gapped-buttons{
+    display: flex;
+    gap: 5rem;
+}
