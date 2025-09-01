@@ -30,6 +30,21 @@ export const Sutom: React.FC = () => {
   const [correctLetters, setCorrectLetters] = useState<string[]>([]);
   const [notInWordLetters, setNotInWordLetters] = useState<string[]>([]);
 
+  const setupGrid = () => {
+    setGrid(
+      Array(MAX_ATTEMPTS)
+        .fill(null)
+        .map(() =>
+          Array(wordLength)
+            .fill(null)
+            .map((value, index) => ({
+              letter: index === 0 ? targetWord.word[0] : "",
+              status: "empty" as const,
+            })),
+        ),
+    );
+  };
+
   const addedInWordLetter = (letter: string) => {
     setInWordLetters((prev) =>
       prev.includes(letter) ? prev : [...prev, letter],
@@ -48,6 +63,36 @@ export const Sutom: React.FC = () => {
     );
   };
 
+  const goToNextRow = () => {
+    setCurrentRow(currentRow + 1);
+    setCurrentCol(1);
+  };
+
+  const checkWinOrLoose = (currentWord: string) => {
+    if (currentWord === targetWord.word) {
+      setWon(true);
+      setGameOver(true);
+      setMessage("Félicitations ! Vous avez trouvé le mot !");
+    } else if (currentRow + 1 === MAX_ATTEMPTS) {
+      setGameOver(true);
+      setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
+    } else {
+      goToNextRow();
+    }
+  };
+
+  const resetGame = () => {
+    setupGrid();
+    setCurrentRow(0);
+    setCurrentCol(1);
+    setGameOver(false);
+    setWon(false);
+    setMessage("");
+    setInWordLetters([]);
+    setCorrectLetters([]);
+    setNotInWordLetters([]);
+  };
+
   useEffect(() => {
     async function getWordsForMe() {
       const { data: words } = await supabase
@@ -64,32 +109,8 @@ export const Sutom: React.FC = () => {
         setWordLength(0);
       }
     }
-
     getWordsForMe();
   }, [playerId]);
-
-  const resetGame = () => {
-    setGrid(
-      Array(MAX_ATTEMPTS)
-        .fill(null)
-        .map(() =>
-          Array(wordLength)
-            .fill(null)
-            .map((value, index) => ({
-              letter: index === 0 ? targetWord.word[0] : "",
-              status: "empty" as const,
-            })),
-        ),
-    );
-    setCurrentRow(0);
-    setCurrentCol(1);
-    setGameOver(false);
-    setWon(false);
-    setMessage("");
-    setInWordLetters([]);
-    setCorrectLetters([]);
-    setNotInWordLetters([]);
-  };
 
   useEffect(() => {
     resetGame();
@@ -133,6 +154,8 @@ export const Sutom: React.FC = () => {
     setGrid(newGrid);
     setMessage("");
 
+    checkWinOrLoose(currentWord);
+
     if (currentWord === targetWord.word) {
       setWon(true);
       setGameOver(true);
@@ -141,8 +164,7 @@ export const Sutom: React.FC = () => {
       setGameOver(true);
       setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
     } else {
-      setCurrentRow(currentRow + 1);
-      setCurrentCol(1);
+      goToNextRow();
     }
   }, [grid, currentRow, currentCol]);
 
@@ -172,7 +194,7 @@ export const Sutom: React.FC = () => {
         setMessage("");
       }
     },
-    [currentRow, currentCol, gameOver, grid, checkWord],
+    [gameOver, currentCol, wordLength, checkWord, grid, currentRow],
   );
 
   useEffect(() => {
@@ -197,15 +219,21 @@ export const Sutom: React.FC = () => {
         setPlayers={setPlayers}
         setPlayerId={setPlayerId}
       />
-
+      {message && (
+        <h1
+          className={`message ${won ? "success" : gameOver ? "error" : "info"}`}
+        >
+          {message}
+        </h1>
+      )}
       <div className="grid">
         {grid.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
             {row.map((cell, cellIndex) => (
               <div
                 style={{
-                  width: `${Math.min(600, window.innerWidth - 150) / wordLength}px`,
-                  height: `${Math.min(600, window.innerWidth - 150) / wordLength}px`,
+                  width: `${Math.min(400, window.innerWidth - 150) / wordLength}px`,
+                  height: `${Math.min(400, window.innerWidth - 150) / wordLength}px`,
                 }}
                 key={cellIndex}
                 className={getCellClass(cell, rowIndex, currentRow, gameOver)}
@@ -223,14 +251,6 @@ export const Sutom: React.FC = () => {
         notInWordLetters={notInWordLetters}
         handleKeyPress={handleKeyPress}
       />
-
-      {message && (
-        <h1
-          className={`message ${won ? "success" : gameOver ? "error" : "info"}`}
-        >
-          {message}
-        </h1>
-      )}
 
       {gameOver && (
         <div className="game-controls">

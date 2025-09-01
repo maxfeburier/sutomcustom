@@ -32,35 +32,22 @@ export const Keyboard = ({
             {key}
           </button>
         ))}
-        <br />
-        {"".split("").map((key) => (
-          <button key={key} onClick={() => handleKeyPress(key)} className="key">
-            {key}
-          </button>
-        ))}
-        <br />
-
-        {"".split("").map((key) => (
-          <button key={key} onClick={() => handleKeyPress(key)} className="key">
-            {key}
-          </button>
-        ))}
-      </div>
-      <br />
-      <div className="row gapped-buttons">
         <Button
-          color="error"
           variant="contained"
+          color="error"
           onClick={() => handleKeyPress("BACKSPACE")}
-          className=""
+          className="backspace-key"
         >
           <BackspaceIcon />
         </Button>
+        <br />
+      </div>
+      <div className="row gapped-buttons">
         <Button
           variant="contained"
           color="success"
           onClick={() => handleKeyPress("ENTER")}
-          className=""
+          className="validate-key"
         >
           <CheckIcon />
         </Button>

@@ -4,8 +4,14 @@
     align-items: center;
     padding: 2vw;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 85%;
+    max-width: fit-content;
     margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+    .sutom-container {
+        max-width: 85%;
+    }
 }
 
 .cell {
@@ -152,4 +158,13 @@ h1 {
 .gapped-buttons {
     display: flex;
     gap: 5rem;
+    width: 20%;
+}
+
+.backspace-key {
+    grid-column: 5 / span 2
+}
+
+.validate-key {
+    width: 100%;
 }
