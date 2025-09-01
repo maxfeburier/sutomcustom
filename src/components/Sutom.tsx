@@ -10,6 +10,27 @@ import { getCellClass } from "../utils/utils";
 
 const MAX_ATTEMPTS = 6;
 
+export const callWordApi = async (attempt: string) => {
+  const response1 = await fetch(
+    `https://api.dictionaryapi.dev/api/v2/entries/en/${attempt.toLowerCase()}`,
+  );
+  if (response1.ok) {
+    return true;
+  }
+
+  const response = await fetch(
+    `https://freedictionaryapi.com/api/v1/entries/fr/${attempt.toLowerCase()}`,
+  );
+  if (!response.ok) {
+    return false;
+  }
+  const data = (await response.json()) as { entries: any[] };
+  if (data.entries && data.entries.length > 0) {
+    return true;
+  }
+  return false;
+};
+
 export const Sutom: React.FC = () => {
   const [currentRow, setCurrentRow] = useState(0);
   const [currentCol, setCurrentCol] = useState(1);
@@ -93,6 +114,41 @@ export const Sutom: React.FC = () => {
     setNotInWordLetters([]);
   };
 
+  const correctLettersPlacement = (
+    wordLetters: string[],
+    targetLetters: string[],
+    newGrid: LetterState[][],
+  ) => {
+    for (let i = 0; i < wordLength; i++) {
+      if (wordLetters[i] === targetLetters[i]) {
+        addedCorrectLetter(wordLetters[i]);
+        newGrid[currentRow][i].status = "correct";
+        targetLetters[i] = "";
+        wordLetters[i] = "";
+      }
+    }
+  };
+
+  const wrongLettersPlacement = (
+    wordLetters: string[],
+    targetLetters: string[],
+    newGrid: LetterState[][],
+  ) => {
+    for (let i = 0; i < wordLength; i++) {
+      if (wordLetters[i] && targetLetters.includes(wordLetters[i])) {
+        addedInWordLetter(wordLetters[i]);
+        newGrid[currentRow][i].status = "present";
+        const targetIndex = targetLetters.indexOf(wordLetters[i]);
+        targetLetters[targetIndex] = "";
+      } else if (wordLetters[i]) {
+        addedNotInWordLetter(wordLetters[i]);
+        newGrid[currentRow][i].status = "absent";
+      }
+    }
+  };
+
+  useEffect(() => {}, []);
+
   useEffect(() => {
     async function getWordsForMe() {
       const { data: words } = await supabase
@@ -116,55 +172,35 @@ export const Sutom: React.FC = () => {
     resetGame();
   }, [playerId, targetWord]);
 
-  const checkWord = useCallback(() => {
+  const checkWord = useCallback(async () => {
     const currentWord = grid[currentRow].map((cell) => cell.letter).join("");
+    if (await callWordApi(currentWord)) {
+      const newGrid = [...grid];
+      const targetLetters = targetWord.word.split("");
+      const wordLetters = currentWord.split("");
 
+      correctLettersPlacement(wordLetters, targetLetters, newGrid);
+      wrongLettersPlacement(wordLetters, targetLetters, newGrid);
+
+      setGrid(newGrid);
+      setMessage("");
+
+      checkWinOrLoose(currentWord);
+
+      if (currentWord === targetWord.word) {
+        setWon(true);
+        setGameOver(true);
+        setMessage("Félicitations ! Vous avez trouvé le mot !");
+      } else if (currentRow + 1 === MAX_ATTEMPTS) {
+        setGameOver(true);
+        setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
+      } else {
+        goToNextRow();
+      }
+    }
     if (currentWord.length !== wordLength) {
       setMessage("Mot incomplet !");
       return;
-    }
-
-    const newGrid = [...grid];
-    const targetLetters = targetWord.word.split("");
-    const wordLetters = currentWord.split("");
-
-    // Première passe : marquer les lettres correctes
-    for (let i = 0; i < wordLength; i++) {
-      if (wordLetters[i] === targetLetters[i]) {
-        addedCorrectLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "correct";
-        targetLetters[i] = "";
-        wordLetters[i] = "";
-      }
-    }
-
-    // Deuxième passe : marquer les lettres présentes mais mal placées
-    for (let i = 0; i < wordLength; i++) {
-      if (wordLetters[i] && targetLetters.includes(wordLetters[i])) {
-        addedInWordLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "present";
-        const targetIndex = targetLetters.indexOf(wordLetters[i]);
-        targetLetters[targetIndex] = "";
-      } else if (wordLetters[i]) {
-        addedNotInWordLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "absent";
-      }
-    }
-
-    setGrid(newGrid);
-    setMessage("");
-
-    checkWinOrLoose(currentWord);
-
-    if (currentWord === targetWord.word) {
-      setWon(true);
-      setGameOver(true);
-      setMessage("Félicitations ! Vous avez trouvé le mot !");
-    } else if (currentRow + 1 === MAX_ATTEMPTS) {
-      setGameOver(true);
-      setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
-    } else {
-      goToNextRow();
     }
   }, [grid, currentRow, currentCol]);
 
@@ -220,11 +256,11 @@ export const Sutom: React.FC = () => {
         setPlayerId={setPlayerId}
       />
       {message && (
-        <h1
+        <h2
           className={`message ${won ? "success" : gameOver ? "error" : "info"}`}
         >
           {message}
-        </h1>
+        </h2>
       )}
       <div className="grid">
         {grid.map((row, rowIndex) => (

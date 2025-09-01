@@ -36,6 +36,12 @@ h1 {
     margin-bottom: 20px;
 }
 
+h2 {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 15px;
+}
+
 .white-text {
     color: white;
     font-size: 1.1rem;
