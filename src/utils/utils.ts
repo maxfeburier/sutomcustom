@@ -13,3 +13,20 @@ export const getCellClass = (
   }
   return className;
 };
+
+export const getKeyBoardKeyClass = (
+  key: string,
+  inWordLetters: string[],
+  correctLetters: string[],
+  notInWordLetters: string[],
+) => {
+  let className = "key";
+  if (correctLetters.includes(key)) {
+    className += " correct";
+  } else if (inWordLetters.includes(key)) {
+    className += " present";
+  } else if (notInWordLetters.includes(key)) {
+    className += " absent";
+  }
+  return className;
+};

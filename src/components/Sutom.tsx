@@ -25,6 +25,28 @@ export const Sutom: React.FC = () => {
     id: 0,
   });
   const [wordLength, setWordLength] = useState<number>(targetWord.word.length);
+  const [grid, setGrid] = useState<LetterState[][]>([[]]);
+  const [inWordLetters, setInWordLetters] = useState<string[]>([]);
+  const [correctLetters, setCorrectLetters] = useState<string[]>([]);
+  const [notInWordLetters, setNotInWordLetters] = useState<string[]>([]);
+
+  const addedInWordLetter = (letter: string) => {
+    setInWordLetters((prev) =>
+      prev.includes(letter) ? prev : [...prev, letter],
+    );
+  };
+
+  const addedCorrectLetter = (letter: string) => {
+    setCorrectLetters((prev) =>
+      prev.includes(letter) ? prev : [...prev, letter],
+    );
+  };
+
+  const addedNotInWordLetter = (letter: string) => {
+    setNotInWordLetters((prev) =>
+      prev.includes(letter) ? prev : [...prev, letter],
+    );
+  };
 
   useEffect(() => {
     async function getWordsForMe() {
@@ -42,74 +64,9 @@ export const Sutom: React.FC = () => {
         setWordLength(0);
       }
     }
+
     getWordsForMe();
   }, [playerId]);
-
-  const [grid, setGrid] = useState<LetterState[][]>(
-    Array(MAX_ATTEMPTS)
-      .fill(null)
-      .map(() =>
-        Array(wordLength)
-          .fill(null)
-          .map((value, index) => ({
-            letter: index === 0 ? targetWord.word[0] : "",
-            status: "empty" as const,
-          })),
-      ),
-  );
-
-  useEffect(() => {
-    async function getAllAttempts() {
-      const { data: attempts } = await supabase
-        .from("attempts")
-        .select("attempt")
-        .eq("player", playerId)
-        .eq("word_id", targetWord.id);
-      if (attempts && attempts.length > 0) {
-        const newGrid = Array(MAX_ATTEMPTS)
-          .fill(null)
-          .map(() =>
-            Array(wordLength)
-              .fill(null)
-              .map((value, index) => ({
-                letter: index === 0 ? targetWord.word[0] : "",
-                status: "empty" as const,
-              })),
-          );
-
-        let newCurrentRow = 0;
-
-        attempts.forEach((attemptObj, index) => {
-          const attempt = attemptObj.attempt.toUpperCase();
-
-          for (let i = 0; i < wordLength; i++) {
-            newGrid[index][i] = { letter: attempt[i], status: "empty" };
-          }
-          newCurrentRow++;
-        });
-        setGrid(newGrid);
-        setCurrentRow(newCurrentRow);
-        setCurrentCol(1);
-      } else {
-        setGrid(
-          Array(MAX_ATTEMPTS)
-            .fill(null)
-            .map(() =>
-              Array(wordLength)
-                .fill(null)
-                .map((value, index) => ({
-                  letter: index === 0 ? targetWord.word[0] : "",
-                  status: "empty" as const,
-                })),
-            ),
-        );
-        setCurrentRow(0);
-        setCurrentCol(1);
-      }
-    }
-    resetGame();
-    getAllAttempts();
-  }, [playerId, targetWord, wordLength]);
 
   const resetGame = () => {
     setGrid(
@@ -129,7 +86,14 @@ export const Sutom: React.FC = () => {
     setGameOver(false);
     setWon(false);
     setMessage("");
+    setInWordLetters([]);
+    setCorrectLetters([]);
+    setNotInWordLetters([]);
   };
+
+  useEffect(() => {
+    resetGame();
+  }, [playerId, targetWord]);
 
   const checkWord = useCallback(() => {
     const currentWord = grid[currentRow].map((cell) => cell.letter).join("");
@@ -146,6 +110,7 @@ export const Sutom: React.FC = () => {
     // Première passe : marquer les lettres correctes
     for (let i = 0; i < wordLength; i++) {
       if (wordLetters[i] === targetLetters[i]) {
+        addedCorrectLetter(wordLetters[i]);
         newGrid[currentRow][i].status = "correct";
         targetLetters[i] = "";
         wordLetters[i] = "";
@@ -155,10 +120,12 @@ export const Sutom: React.FC = () => {
     // Deuxième passe : marquer les lettres présentes mais mal placées
     for (let i = 0; i < wordLength; i++) {
       if (wordLetters[i] && targetLetters.includes(wordLetters[i])) {
+        addedInWordLetter(wordLetters[i]);
         newGrid[currentRow][i].status = "present";
         const targetIndex = targetLetters.indexOf(wordLetters[i]);
         targetLetters[targetIndex] = "";
       } else if (wordLetters[i]) {
+        addedNotInWordLetter(wordLetters[i]);
         newGrid[currentRow][i].status = "absent";
       }
     }
@@ -250,7 +217,12 @@ export const Sutom: React.FC = () => {
         ))}
       </div>
 
-      <Keyboard handleKeyPress={handleKeyPress} />
+      <Keyboard
+        inWordLetters={inWordLetters}
+        correctLetters={correctLetters}
+        notInWordLetters={notInWordLetters}
+        handleKeyPress={handleKeyPress}
+      />
 
       {message && (
         <h1
