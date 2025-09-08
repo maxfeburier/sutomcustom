@@ -18,7 +18,7 @@ export const Keyboard = ({
   return (
     <>
       <div className="keyboard">
-        {"AZERTYUIOPQSDFGHJKLMWXCVBN".split("").map((key) => (
+        {"AZERTYUIOPQSDFGHJKLMWXCVBN.".split("").map((key) => (
           <button
             key={key}
             onClick={() => handleKeyPress(key)}

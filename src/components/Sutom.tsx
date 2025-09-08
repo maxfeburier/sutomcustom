@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import "./Sutom.css";
-import { InputDaysWord } from "./InputDaysWord";
-import { Button } from "@mui/material";
-import { Keyboard } from "./Keyboard";
-import { supabase } from "../utils/supabase";
+import {InputDaysWord} from "./InputDaysWord";
+import {Button} from "@mui/material";
+import {Keyboard} from "./Keyboard";
+import {supabase} from "../utils/supabase";
 import PlayerSelector from "./PlayerSelector";
-import { LetterState, playerType, wordType } from "../types";
-import { getCellClass } from "../utils/utils";
+import {LetterState, playerType, wordType} from "../types";
+import {getCellClass} from "../utils/utils";
 
 const MAX_ATTEMPTS = 6;
 
@@ -25,10 +25,7 @@ export const callWordApi = async (attempt: string) => {
     return false;
   }
   const data = (await response.json()) as { entries: any[] };
-  if (data.entries && data.entries.length > 0) {
-    return true;
-  }
-  return false;
+  return data.entries && data.entries.length > 0;
 };
 
 export const Sutom: React.FC = () => {
@@ -173,8 +170,11 @@ export const Sutom: React.FC = () => {
   }, [playerId, targetWord]);
 
   const checkWord = useCallback(async () => {
-    const currentWord = grid[currentRow].map((cell) => cell.letter).join("");
-    if (await callWordApi(currentWord)) {
+    const currentWord = grid[currentRow]
+      .map((cell) => cell.letter)
+      .join("")
+      .replace(".", "");
+    if (currentWord.length === wordLength && (await callWordApi(currentWord))) {
       const newGrid = [...grid];
       const targetLetters = targetWord.word.split("");
       const wordLetters = currentWord.split("");
@@ -222,7 +222,7 @@ export const Sutom: React.FC = () => {
           setCurrentCol(currentCol - 1);
           setMessage("");
         }
-      } else if (key.match(/^[A-Z]$/) && currentCol < wordLength) {
+      } else if (key.match(/^[A-Z.]$/) && currentCol < wordLength) {
         const newGrid = [...grid];
         newGrid[currentRow][currentCol] = { letter: key, status: "empty" };
         setGrid(newGrid);
