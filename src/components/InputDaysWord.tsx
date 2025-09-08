@@ -1,7 +1,7 @@
 import { Button, TextField } from "@mui/material";
 import { supabase } from "../utils/supabase";
 import { useEffect, useState } from "react";
-import { callWordApi } from "./Sutom";
+import { callWordApi } from "../apicalls/callWordApi";
 
 export const InputDaysWord = ({
   setIsInputMode,
@@ -80,7 +80,11 @@ export const InputDaysWord = ({
         <Button
           variant="contained"
           color="warning"
-          onClick={() => setIsInputMode(!isInputMode)}
+          onClick={() => {
+            setIsInputMode(!isInputMode);
+            console.log("scrolling to bottom", document.body.scrollHeight);
+            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 1);
+          }}
           className="change-word-button"
         >
           {isInputMode ? "Annuler" : "définir le mot du jour"}

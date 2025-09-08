@@ -1,32 +1,15 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "./Sutom.css";
-import {InputDaysWord} from "./InputDaysWord";
-import {Button} from "@mui/material";
-import {Keyboard} from "./Keyboard";
-import {supabase} from "../utils/supabase";
+import { InputDaysWord } from "./InputDaysWord";
+import { Button } from "@mui/material";
+import { Keyboard } from "./Keyboard";
+import { supabase } from "../utils/supabase";
 import PlayerSelector from "./PlayerSelector";
-import {LetterState, playerType, wordType} from "../types";
-import {getCellClass} from "../utils/utils";
+import { LetterState, playerType, wordType } from "../types";
+import { getCellClass } from "../utils/utils";
+import { callWordApi } from "../apicalls/callWordApi";
 
 const MAX_ATTEMPTS = 6;
-
-export const callWordApi = async (attempt: string) => {
-  const response1 = await fetch(
-    `https://api.dictionaryapi.dev/api/v2/entries/en/${attempt.toLowerCase()}`,
-  );
-  if (response1.ok) {
-    return true;
-  }
-
-  const response = await fetch(
-    `https://freedictionaryapi.com/api/v1/entries/fr/${attempt.toLowerCase()}`,
-  );
-  if (!response.ok) {
-    return false;
-  }
-  const data = (await response.json()) as { entries: any[] };
-  return data.entries && data.entries.length > 0;
-};
 
 export const Sutom: React.FC = () => {
   const [currentRow, setCurrentRow] = useState(0);
