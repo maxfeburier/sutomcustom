@@ -1,4 +1,12 @@
+import words from "../utils/dico.json";
+
 export const callWordApi = async (attempt: string) => {
+  const dicoWords: string[] = words as string[];
+
+  if (dicoWords.includes(attempt.toLowerCase())) {
+    return true;
+  }
+
   const response1 = await fetch(
     `https://api.dictionaryapi.dev/api/v2/entries/en/${attempt.toLowerCase()}`,
   );
