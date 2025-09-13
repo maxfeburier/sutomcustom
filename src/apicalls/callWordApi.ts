@@ -8,6 +8,16 @@ export const callWordApi = async (attempt: string) => {
     return true;
   }
 
+  const response2 = await fetch(
+    `https://www.cnrtl.fr/definition/${lowerCaseAttempt}`,
+  );
+  if (response2.ok) {
+    const text = await response2.text();
+    if (!text.includes("Cette forme est introuvable !")) {
+      return true;
+    }
+  }
+
   const response1 = await fetch(
     `https://api.dictionaryapi.dev/api/v2/entries/en/${lowerCaseAttempt}`,
   );

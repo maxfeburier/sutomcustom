@@ -8,28 +8,47 @@ import PlayerSelector from "./PlayerSelector";
 import { LetterState, playerType, wordType } from "../types";
 import { getCellClass } from "../utils/utils";
 import { callWordApi } from "../apicalls/callWordApi";
+import { GameMessage } from "./GameMessage";
+import { useWord } from "../hooks/useWord";
 
 const MAX_ATTEMPTS = 6;
 
 export const Sutom: React.FC = () => {
+  //découpage état position
   const [currentRow, setCurrentRow] = useState(0);
   const [currentCol, setCurrentCol] = useState(1);
+
+  //decoupage état de jeu
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
   const [message, setMessage] = useState("");
+
+  //découpage état input
   const [inputPaused, setInputPaused] = useState(false);
+
+  //découpage état joueur
   const [player, setPlayer] = useState("");
   const [playerId, setPlayerId] = useState(1);
   const [players, setPlayers] = useState<playerType[]>();
+
+  //découpage état mot
   const [targetWord, setTargetWord] = useState<{ word: string; id: number }>({
     word: "",
     id: 0,
   });
   const [wordLength, setWordLength] = useState<number>(targetWord.word.length);
   const [grid, setGrid] = useState<LetterState[][]>([[]]);
-  const [inWordLetters, setInWordLetters] = useState<string[]>([]);
-  const [correctLetters, setCorrectLetters] = useState<string[]>([]);
-  const [notInWordLetters, setNotInWordLetters] = useState<string[]>([]);
+
+  const {
+    inWordLetters,
+    correctLetters,
+    notInWordLetters,
+    setInWordLetters,
+    setCorrectLetters,
+    setNotInWordLetters,
+    correctLettersPlacement,
+    wrongLettersPlacement,
+  } = useWord();
 
   const setupGrid = () => {
     setGrid(
@@ -43,24 +62,6 @@ export const Sutom: React.FC = () => {
               status: "empty" as const,
             })),
         ),
-    );
-  };
-
-  const addedInWordLetter = (letter: string) => {
-    setInWordLetters((prev) =>
-      prev.includes(letter) ? prev : [...prev, letter],
-    );
-  };
-
-  const addedCorrectLetter = (letter: string) => {
-    setCorrectLetters((prev) =>
-      prev.includes(letter) ? prev : [...prev, letter],
-    );
-  };
-
-  const addedNotInWordLetter = (letter: string) => {
-    setNotInWordLetters((prev) =>
-      prev.includes(letter) ? prev : [...prev, letter],
     );
   };
 
@@ -94,41 +95,6 @@ export const Sutom: React.FC = () => {
     setNotInWordLetters([]);
   };
 
-  const correctLettersPlacement = (
-    wordLetters: string[],
-    targetLetters: string[],
-    newGrid: LetterState[][],
-  ) => {
-    for (let i = 0; i < wordLength; i++) {
-      if (wordLetters[i] === targetLetters[i]) {
-        addedCorrectLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "correct";
-        targetLetters[i] = "";
-        wordLetters[i] = "";
-      }
-    }
-  };
-
-  const wrongLettersPlacement = (
-    wordLetters: string[],
-    targetLetters: string[],
-    newGrid: LetterState[][],
-  ) => {
-    for (let i = 0; i < wordLength; i++) {
-      if (wordLetters[i] && targetLetters.includes(wordLetters[i])) {
-        addedInWordLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "present";
-        const targetIndex = targetLetters.indexOf(wordLetters[i]);
-        targetLetters[targetIndex] = "";
-      } else if (wordLetters[i]) {
-        addedNotInWordLetter(wordLetters[i]);
-        newGrid[currentRow][i].status = "absent";
-      }
-    }
-  };
-
-  useEffect(() => {}, []);
-
   useEffect(() => {
     async function getWordsForMe() {
       const { data: words } = await supabase
@@ -157,13 +123,29 @@ export const Sutom: React.FC = () => {
       .map((cell) => cell.letter)
       .join("")
       .replace(".", "");
-    if (currentWord.length === wordLength && (await callWordApi(currentWord))) {
+    if (currentWord.length === wordLength) {
+      if (!(await callWordApi(currentWord))) {
+        setMessage("Mot non reconnu !");
+        return;
+      }
       const newGrid = [...grid];
       const targetLetters = targetWord.word.split("");
       const wordLetters = currentWord.split("");
 
-      correctLettersPlacement(wordLetters, targetLetters, newGrid);
-      wrongLettersPlacement(wordLetters, targetLetters, newGrid);
+      correctLettersPlacement(
+        wordLetters,
+        targetLetters,
+        newGrid,
+        wordLength,
+        currentRow,
+      );
+      wrongLettersPlacement(
+        wordLetters,
+        targetLetters,
+        newGrid,
+        wordLength,
+        currentRow,
+      );
 
       setGrid(newGrid);
       setMessage("");
@@ -238,13 +220,9 @@ export const Sutom: React.FC = () => {
         setPlayers={setPlayers}
         setPlayerId={setPlayerId}
       />
-      {message && (
-        <h2
-          className={`message ${won ? "success" : gameOver ? "error" : "info"}`}
-        >
-          {message}
-        </h2>
-      )}
+
+      <GameMessage message={message} won={won} gameOver={gameOver} />
+
       <div className="grid">
         {grid.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
