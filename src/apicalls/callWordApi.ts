@@ -2,20 +2,21 @@ import words from "../utils/dico.json";
 
 export const callWordApi = async (attempt: string) => {
   const dicoWords: string[] = words as string[];
+  const lowerCaseAttempt = attempt.toLowerCase();
 
-  if (dicoWords.includes(attempt.toLowerCase())) {
+  if (dicoWords.includes(lowerCaseAttempt)) {
     return true;
   }
 
   const response1 = await fetch(
-    `https://api.dictionaryapi.dev/api/v2/entries/en/${attempt.toLowerCase()}`,
+    `https://api.dictionaryapi.dev/api/v2/entries/en/${lowerCaseAttempt}`,
   );
   if (response1.ok) {
     return true;
   }
 
   const response = await fetch(
-    `https://freedictionaryapi.com/api/v1/entries/fr/${attempt.toLowerCase()}`,
+    `https://freedictionaryapi.com/api/v1/entries/fr/${lowerCaseAttempt}`,
   );
   if (!response.ok) {
     return false;
