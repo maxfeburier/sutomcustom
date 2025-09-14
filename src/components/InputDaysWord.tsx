@@ -3,6 +3,7 @@ import { supabase } from "../utils/supabase";
 import { useEffect, useState } from "react";
 import { callWordApi } from "../apicalls/callWordApi";
 import { resetAttempts } from "../apicalls/attempsCall";
+import { determinePlayerId } from "../utils/utils";
 
 const removeAccents = (str: string) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -38,7 +39,7 @@ export const InputDaysWord = ({
             supabase
               .from("attempts")
               .delete()
-              .eq("player", playerId === 1 ? 2 : playerId === 2 ? 1 : 0)
+              .eq("player", determinePlayerId(playerId))
               .then((res) => {
                 if (res.error) {
                   console.error("Error resetting attempts:", res.error);
@@ -54,7 +55,7 @@ export const InputDaysWord = ({
     if (submitted) {
       changedWord(removeAccents(word));
       setSubmitted(false);
-      resetAttempts(playerId === 1 ? 2 : playerId === 2 ? 1 : 0);
+      resetAttempts(determinePlayerId(playerId));
     }
   }, [submitted]);
 
@@ -63,8 +64,8 @@ export const InputDaysWord = ({
       {isInputMode && (
         <>
           <TextField
+            variant="filled"
             label="Mot du jour"
-            variant="outlined"
             className="day-word-input"
             value={word}
             onChange={(e) => setWord(e.target.value)}

@@ -5,7 +5,7 @@ export const getCellClass = (
   cell: LetterState,
   rowIndex: number,
   currentRow: number,
-  gameOver: boolean,
+  gameOver: boolean
 ) => {
   let className = `cell ${cell.status}`;
   if (rowIndex === currentRow && !gameOver) {
@@ -18,7 +18,7 @@ export const getKeyBoardKeyClass = (
   key: string,
   inWordLetters: string[],
   correctLetters: string[],
-  notInWordLetters: string[],
+  notInWordLetters: string[]
 ) => {
   let className = "key";
   if (correctLetters.includes(key)) {
@@ -29,4 +29,8 @@ export const getKeyBoardKeyClass = (
     className += " absent";
   }
   return className;
+};
+
+export const determinePlayerId = (playerId: number) => {
+  return playerId === 1 ? 2 : playerId === 2 ? 1 : 0;
 };

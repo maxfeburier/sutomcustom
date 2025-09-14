@@ -4,7 +4,7 @@ import { InputDaysWord } from "./InputDaysWord";
 import { Button } from "@mui/material";
 import { Keyboard } from "./Keyboard";
 import { supabase } from "../utils/supabase";
-import PlayerSelector from "./PlayerSelector";
+import { PlayerSelector } from "./PlayerSelector";
 import { wordType } from "../types";
 import { callWordApi } from "../apicalls/callWordApi";
 import { GameMessage } from "./GameMessage";
@@ -89,6 +89,30 @@ export const Sutom: React.FC = () => {
     setNotInWordLetters([]);
   };
 
+  const applyLettersStatus = (
+    wordLetters: string[],
+    targetLetters: string[],
+    newGrid: any[],
+    wordLength: number,
+    currentRowTemp: number
+  ) => {
+    correctLettersPlacement(
+      wordLetters,
+      targetLetters,
+      newGrid,
+      wordLength,
+      currentRowTemp
+    );
+
+    wrongLettersPlacement(
+      wordLetters,
+      targetLetters,
+      newGrid,
+      wordLength,
+      currentRowTemp
+    );
+  };
+
   const loadPreviousAttempts = () => {
     let currentRowTemp = currentRow;
     attempts.forEach((word) => {
@@ -100,7 +124,7 @@ export const Sutom: React.FC = () => {
       const targetLetters = targetWord.word.split("");
       const wordLetters = word.attempt.split("");
 
-      correctLettersPlacement(
+      applyLettersStatus(
         wordLetters,
         targetLetters,
         newGrid,
@@ -108,13 +132,6 @@ export const Sutom: React.FC = () => {
         currentRowTemp
       );
 
-      wrongLettersPlacement(
-        wordLetters,
-        targetLetters,
-        newGrid,
-        wordLength,
-        currentRowTemp
-      );
       setGrid(newGrid);
       if (word.attempt === targetWord.word) {
         setWon(true);
@@ -159,30 +176,39 @@ export const Sutom: React.FC = () => {
     resetGame();
   }, [playerId, targetWord]);
 
+  const showWin = () => {
+    setWon(true);
+    setGameOver(true);
+    setMessage("Félicitations ! Vous avez trouvé le mot !");
+  };
+
+  const showLose = () => {
+    setGameOver(true);
+    setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
+  };
+
   const checkWord = useCallback(async () => {
     const currentWord = grid[currentRow]
       .map((cell) => cell.letter)
       .join("")
       .replace(".", "");
+
     if (currentWord.length === wordLength) {
       if (!(await callWordApi(currentWord))) {
         setMessage("Mot non reconnu !");
         return;
       }
-
+      const attempToAdd: Attempts = {
+        player: playerId,
+        word_id: targetWord.id,
+        attempt: currentWord,
+        attempt_number: currentRow + 1,
+      };
       const newGrid = [...grid];
       const targetLetters = targetWord.word.split("");
       const wordLetters = currentWord.split("");
 
-      correctLettersPlacement(
-        wordLetters,
-        targetLetters,
-        newGrid,
-        wordLength,
-        currentRow
-      );
-
-      wrongLettersPlacement(
+      applyLettersStatus(
         wordLetters,
         targetLetters,
         newGrid,
@@ -194,19 +220,11 @@ export const Sutom: React.FC = () => {
       setMessage("");
 
       checkWinOrLoose(currentWord);
-      const attempToAdd: Attempts = {
-        player: playerId,
-        word_id: targetWord.id,
-        attempt: currentWord,
-        attempt_number: currentRow + 1,
-      };
+
       if (currentWord === targetWord.word) {
-        setWon(true);
-        setGameOver(true);
-        setMessage("Félicitations ! Vous avez trouvé le mot !");
+        showWin();
       } else if (currentRow + 1 === MAX_ATTEMPTS) {
-        setGameOver(true);
-        setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
+        showLose();
       } else {
         goToNextRow();
       }
@@ -267,18 +285,6 @@ export const Sutom: React.FC = () => {
         notInWordLetters={notInWordLetters}
         handleKeyPress={handleKeyPress}
       />
-
-      {gameOver && (
-        <div className="game-controls">
-          <Button
-            variant="contained"
-            onClick={resetGame}
-            className="reset-button"
-          >
-            Nouvelle partie
-          </Button>
-        </div>
-      )}
       <br />
       <InputDaysWord
         playerId={playerId}

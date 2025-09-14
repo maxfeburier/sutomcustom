@@ -16,13 +16,13 @@ interface PlayerSelectorProps {
   setPlayerId: (id: number) => void;
 }
 
-export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
+export const PlayerSelector = ({
   players,
   player,
   setPlayer,
   setPlayers,
   setPlayerId,
-}) => {
+}: PlayerSelectorProps) => {
   useEffect(() => {
     async function getAllPlayers() {
       const { data: players } = await supabase.from("players").select();
@@ -47,7 +47,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
         onChange={(e) => {
           setPlayer(e.target.value as string);
           const selectedPlayer = players?.find(
-            (p) => p.name === e.target.value,
+            (p) => p.name === e.target.value
           );
           if (selectedPlayer) {
             setPlayerId(selectedPlayer.id);
