@@ -2,6 +2,11 @@ import { Button, TextField } from "@mui/material";
 import { supabase } from "../utils/supabase";
 import { useEffect, useState } from "react";
 import { callWordApi } from "../apicalls/callWordApi";
+import { resetAttempts } from "../apicalls/attempsCall";
+
+const removeAccents = (str: string) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
 
 export const InputDaysWord = ({
   setIsInputMode,
@@ -47,8 +52,9 @@ export const InputDaysWord = ({
       setWord("");
     };
     if (submitted) {
-      changedWord(word);
+      changedWord(removeAccents(word));
       setSubmitted(false);
+      resetAttempts(playerId === 1 ? 2 : playerId === 2 ? 1 : 0);
     }
   }, [submitted]);
 
@@ -82,7 +88,7 @@ export const InputDaysWord = ({
           color="warning"
           onClick={() => {
             setIsInputMode(!isInputMode);
-            console.log("scrolling to bottom", document.body.scrollHeight);
+            setWord("");
             setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 1);
           }}
           className="change-word-button"

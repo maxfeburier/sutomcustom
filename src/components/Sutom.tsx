@@ -5,39 +5,52 @@ import { Button } from "@mui/material";
 import { Keyboard } from "./Keyboard";
 import { supabase } from "../utils/supabase";
 import PlayerSelector from "./PlayerSelector";
-import { LetterState, playerType, wordType } from "../types";
-import { getCellClass } from "../utils/utils";
+import { wordType } from "../types";
 import { callWordApi } from "../apicalls/callWordApi";
 import { GameMessage } from "./GameMessage";
 import { useWord } from "../hooks/useWord";
+import { Grid } from "./Grid";
+import { useGrid } from "../hooks/useGrid";
+import { useKeys } from "../hooks/useKeys";
+import { useGameState } from "../hooks/useGameState";
+import { usePlayer } from "../hooks/usePlayer";
+import { loadAttempts, saveAttempt } from "../apicalls/attempsCall";
 
-const MAX_ATTEMPTS = 6;
+export type Attempts = {
+  attempt: string;
+  attempt_number: number;
+  player: number;
+  word_id: number;
+};
 
 export const Sutom: React.FC = () => {
-  //découpage état position
-  const [currentRow, setCurrentRow] = useState(0);
-  const [currentCol, setCurrentCol] = useState(1);
-
-  //decoupage état de jeu
-  const [gameOver, setGameOver] = useState(false);
-  const [won, setWon] = useState(false);
-  const [message, setMessage] = useState("");
-
-  //découpage état input
   const [inputPaused, setInputPaused] = useState(false);
 
-  //découpage état joueur
-  const [player, setPlayer] = useState("");
-  const [playerId, setPlayerId] = useState(1);
-  const [players, setPlayers] = useState<playerType[]>();
-
-  //découpage état mot
   const [targetWord, setTargetWord] = useState<{ word: string; id: number }>({
     word: "",
     id: 0,
   });
-  const [wordLength, setWordLength] = useState<number>(targetWord.word.length);
-  const [grid, setGrid] = useState<LetterState[][]>([[]]);
+
+  const [attempts, setAttempts] = useState<Attempts[]>([]);
+
+  const { player, setPlayer, playerId, setPlayerId, players, setPlayers } =
+    usePlayer();
+
+  const {
+    grid,
+    currentRow,
+    currentCol,
+    setCurrentCol,
+    setCurrentRow,
+    setupGrid,
+    goToNextRow,
+    MAX_ATTEMPTS,
+    wordLength,
+    setWordLength,
+    setGrid,
+  } = useGrid({
+    targetWord,
+  });
 
   const {
     inWordLetters,
@@ -50,38 +63,19 @@ export const Sutom: React.FC = () => {
     wrongLettersPlacement,
   } = useWord();
 
-  const setupGrid = () => {
-    setGrid(
-      Array(MAX_ATTEMPTS)
-        .fill(null)
-        .map(() =>
-          Array(wordLength)
-            .fill(null)
-            .map((value, index) => ({
-              letter: index === 0 ? targetWord.word[0] : "",
-              status: "empty" as const,
-            })),
-        ),
-    );
-  };
-
-  const goToNextRow = () => {
-    setCurrentRow(currentRow + 1);
-    setCurrentCol(1);
-  };
-
-  const checkWinOrLoose = (currentWord: string) => {
-    if (currentWord === targetWord.word) {
-      setWon(true);
-      setGameOver(true);
-      setMessage("Félicitations ! Vous avez trouvé le mot !");
-    } else if (currentRow + 1 === MAX_ATTEMPTS) {
-      setGameOver(true);
-      setMessage(`Perdu ! Le mot était : ${targetWord.word}`);
-    } else {
-      goToNextRow();
-    }
-  };
+  const {
+    gameOver,
+    setGameOver,
+    won,
+    setWon,
+    message,
+    setMessage,
+    checkWinOrLoose,
+  } = useGameState({
+    targetWord,
+    currentRow,
+    goToNextRow,
+  });
 
   const resetGame = () => {
     setupGrid();
@@ -95,6 +89,48 @@ export const Sutom: React.FC = () => {
     setNotInWordLetters([]);
   };
 
+  const loadPreviousAttempts = () => {
+    let currentRowTemp = currentRow;
+    attempts.forEach((word) => {
+      if (word.attempt.length !== wordLength) return;
+      const newGrid = [...grid];
+      word.attempt.split("").forEach((letter, index) => {
+        newGrid[currentRowTemp][index] = { letter, status: "empty" };
+      });
+      const targetLetters = targetWord.word.split("");
+      const wordLetters = word.attempt.split("");
+
+      correctLettersPlacement(
+        wordLetters,
+        targetLetters,
+        newGrid,
+        wordLength,
+        currentRowTemp
+      );
+
+      wrongLettersPlacement(
+        wordLetters,
+        targetLetters,
+        newGrid,
+        wordLength,
+        currentRowTemp
+      );
+      setGrid(newGrid);
+      if (word.attempt === targetWord.word) {
+        setWon(true);
+        setGameOver(true);
+        setMessage("Félicitations ! Vous avez trouvé le mot !");
+        return;
+      }
+      currentRowTemp += 1;
+      setCurrentRow(currentRowTemp);
+    });
+  };
+
+  useEffect(() => {
+    loadPreviousAttempts();
+  }, [wordLength, attempts]);
+
   useEffect(() => {
     async function getWordsForMe() {
       const { data: words } = await supabase
@@ -106,6 +142,11 @@ export const Sutom: React.FC = () => {
         const typedWords: wordType = words[0] as wordType;
         setTargetWord(typedWords);
         setWordLength(words[0].word.length);
+        loadAttempts(playerId, typedWords.id).then((data) => {
+          if (data && data.length > 0) {
+            setAttempts(data);
+          }
+        });
       } else {
         setTargetWord({ word: "", id: 0 });
         setWordLength(0);
@@ -128,6 +169,7 @@ export const Sutom: React.FC = () => {
         setMessage("Mot non reconnu !");
         return;
       }
+
       const newGrid = [...grid];
       const targetLetters = targetWord.word.split("");
       const wordLetters = currentWord.split("");
@@ -137,21 +179,27 @@ export const Sutom: React.FC = () => {
         targetLetters,
         newGrid,
         wordLength,
-        currentRow,
+        currentRow
       );
+
       wrongLettersPlacement(
         wordLetters,
         targetLetters,
         newGrid,
         wordLength,
-        currentRow,
+        currentRow
       );
 
       setGrid(newGrid);
       setMessage("");
 
       checkWinOrLoose(currentWord);
-
+      const attempToAdd: Attempts = {
+        player: playerId,
+        word_id: targetWord.id,
+        attempt: currentWord,
+        attempt_number: currentRow + 1,
+      };
       if (currentWord === targetWord.word) {
         setWon(true);
         setGameOver(true);
@@ -162,41 +210,24 @@ export const Sutom: React.FC = () => {
       } else {
         goToNextRow();
       }
-    }
-    if (currentWord.length !== wordLength) {
+      saveAttempt(attempToAdd);
+    } else if (currentWord.length !== wordLength) {
       setMessage("Mot incomplet !");
       return;
     }
-  }, [grid, currentRow, currentCol]);
+  }, [grid, currentCol]);
 
-  const handleKeyPress = useCallback(
-    (key: string) => {
-      if (gameOver) return;
-
-      if (key === "ENTER") {
-        if (currentCol === wordLength) {
-          checkWord();
-        } else {
-          setMessage("Mot incomplet !");
-        }
-      } else if (key === "BACKSPACE") {
-        if (currentCol > 1) {
-          const newGrid = [...grid];
-          newGrid[currentRow][currentCol - 1] = { letter: "", status: "empty" };
-          setGrid(newGrid);
-          setCurrentCol(currentCol - 1);
-          setMessage("");
-        }
-      } else if (key.match(/^[A-Z.]$/) && currentCol < wordLength) {
-        const newGrid = [...grid];
-        newGrid[currentRow][currentCol] = { letter: key, status: "empty" };
-        setGrid(newGrid);
-        setCurrentCol(currentCol + 1);
-        setMessage("");
-      }
-    },
-    [gameOver, currentCol, wordLength, checkWord, grid, currentRow],
-  );
+  const { handleKeyPress } = useKeys({
+    gameOver,
+    currentCol,
+    wordLength,
+    checkWord,
+    grid,
+    currentRow,
+    setGrid,
+    setCurrentCol,
+    setMessage,
+  });
 
   useEffect(() => {
     if (!inputPaused) {
@@ -223,24 +254,12 @@ export const Sutom: React.FC = () => {
 
       <GameMessage message={message} won={won} gameOver={gameOver} />
 
-      <div className="grid">
-        {grid.map((row, rowIndex) => (
-          <div key={rowIndex} className="row">
-            {row.map((cell, cellIndex) => (
-              <div
-                style={{
-                  width: `${Math.min(400, window.innerWidth - 150) / wordLength}px`,
-                  height: `${Math.min(400, window.innerWidth - 150) / wordLength}px`,
-                }}
-                key={cellIndex}
-                className={getCellClass(cell, rowIndex, currentRow, gameOver)}
-              >
-                {cell.letter}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      <Grid
+        grid={grid}
+        currentRow={currentRow}
+        gameOver={gameOver}
+        wordLength={wordLength}
+      />
 
       <Keyboard
         inWordLetters={inWordLetters}
