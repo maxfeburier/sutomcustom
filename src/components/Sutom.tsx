@@ -188,9 +188,12 @@ export const Sutom: React.FC = () => {
   };
 
   const showGridState = () => {
-    return grid
-      .map((elt) => elt.map((e) => getGreatPoint(e)).join(""))
-      .join("\n");
+    let result = [];
+    for (let i = 0; i <= currentRow; i++) {
+      const elt = grid[i].map((e) => getGreatPoint(e)).join("");
+      result.push(elt);
+    }
+    return result.join("\n");
   };
 
   const showWin = () => {
