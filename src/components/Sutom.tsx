@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import "./Sutom.css";
 import { InputDaysWord } from "./InputDaysWord";
-import { Button } from "@mui/material";
 import { Keyboard } from "./Keyboard";
 import { supabase } from "../utils/supabase";
 import { PlayerSelector } from "./PlayerSelector";
-import { wordType } from "../types";
+import { LetterState, wordType } from "../types";
 import { callWordApi } from "../apicalls/callWordApi";
 import { GameMessage } from "./GameMessage";
 import { useWord } from "../hooks/useWord";
@@ -94,14 +93,14 @@ export const Sutom: React.FC = () => {
     targetLetters: string[],
     newGrid: any[],
     wordLength: number,
-    currentRowTemp: number
+    currentRowTemp: number,
   ) => {
     correctLettersPlacement(
       wordLetters,
       targetLetters,
       newGrid,
       wordLength,
-      currentRowTemp
+      currentRowTemp,
     );
 
     wrongLettersPlacement(
@@ -109,7 +108,7 @@ export const Sutom: React.FC = () => {
       targetLetters,
       newGrid,
       wordLength,
-      currentRowTemp
+      currentRowTemp,
     );
   };
 
@@ -129,13 +128,15 @@ export const Sutom: React.FC = () => {
         targetLetters,
         newGrid,
         wordLength,
-        currentRowTemp
+        currentRowTemp,
       );
 
       setGrid(newGrid);
+
       if (word.attempt === targetWord.word) {
         setWon(true);
         setGameOver(true);
+        showGridState();
         setMessage("Félicitations ! Vous avez trouvé le mot !");
         return;
       }
@@ -176,6 +177,22 @@ export const Sutom: React.FC = () => {
     resetGame();
   }, [playerId, targetWord]);
 
+  const getGreatPoint = (status: LetterState) => {
+    if (status.status === "correct") {
+      return "🟢";
+    } else if (status.status === "present") {
+      return "🟡";
+    } else {
+      return "⚫";
+    }
+  };
+
+  const showGridState = () => {
+    return grid
+      .map((elt) => elt.map((e) => getGreatPoint(e)).join(""))
+      .join("\n");
+  };
+
   const showWin = () => {
     setWon(true);
     setGameOver(true);
@@ -213,7 +230,7 @@ export const Sutom: React.FC = () => {
         targetLetters,
         newGrid,
         wordLength,
-        currentRow
+        currentRow,
       );
 
       setGrid(newGrid);
@@ -270,7 +287,12 @@ export const Sutom: React.FC = () => {
         setPlayerId={setPlayerId}
       />
 
-      <GameMessage message={message} won={won} gameOver={gameOver} />
+      <GameMessage
+        showGridState={showGridState}
+        message={message}
+        won={won}
+        gameOver={gameOver}
+      />
 
       <Grid
         grid={grid}

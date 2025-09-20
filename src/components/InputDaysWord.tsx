@@ -96,6 +96,7 @@ export const InputDaysWord = ({
         >
           {isInputMode ? "Annuler" : "définir le mot du jour"}
         </Button>
+        <br />
       </div>
     </div>
   );
