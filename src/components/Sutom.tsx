@@ -188,7 +188,7 @@ export const Sutom: React.FC = () => {
   };
 
   const showGridState = () => {
-    let result = [];
+    let result = [`J'ai trouvé le mot en : ${currentRow + 1} essais`];
     for (let i = 0; i <= currentRow; i++) {
       const elt = grid[i].map((e) => getGreatPoint(e)).join("");
       result.push(elt);
